@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEB2 Lab 2 - Sigurnost</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; max-width: 1000px; }
+        hr { border: none; border-top: 1px dashed red; margin: 30px 0; }
+        .upute { font-style: italic; font-size: 14px; }
+        .upute b { font-style: normal; }
+        .zuto { background: yellow; font-weight: bold; font-style: normal; }
+        input[type=text], input[type=password], input[type=email] { padding: 3px; }
+        form { margin: 10px 0; }
+        table { border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { border: 1px solid #999; padding: 4px 8px; text-align: left; }
+        th { background: #eee; }
+        .upit { background: #f4f4f4; padding: 8px; font-family: monospace; word-break: break-all; }
+        .greska { color: red; }
+        .poruka { background: #ffffcc; padding: 8px; border: 1px solid #cc9; }
+        .log { background: #222; color: #0f0; padding: 8px; font-family: monospace; font-size: 13px; }
+        .box { display: inline-block; vertical-align: top; margin-right: 40px; }
+    </style>
+</head>
+<body>
+
+<h1>Drugi projekt - WEB2</h1>
+
+<% if (prijavljen) { %>
+    <p>Prijavljen kao: <b><%= prijavljen %></b>
+        <form method="POST" action="/logout" style="display:inline"><button>Odjava</button></form>
+    </p>
+<% } %>
+
+<hr>
+
+<h2>SQL ubacivanje (SQL Injection)</h2>
+
+<p class="upute"><b>Upute:</b> Upiši korisničko ime (npr. <b>admin</b>) i dobit ćeš samo tog korisnika.
+    Kad je ranjivost uključena i upišeš <span class="zuto">' OR '1'='1</span> ili <span class="zuto">' OR 1=1 --</span>
+    upit vrati sve korisnike iz baze (tautologija). Kad je ranjivost isključena koristi se parametrizirani upit
+    pa isti unos ne vrati ništa.</p>
+
+<form method="POST" action="/toggle/sqli">
+    <label>
+        <input type="checkbox" name="ukljuceno" onchange="this.form.submit()" <%= sqliRanjivo ? "checked" : "" %>>
+        Ranjivost uključena
+    </label>
+</form>
+
+<form method="POST" action="/sqli">
+    Korisničko ime: <input type="text" name="username" size="40">
+    <button>Pretraži</button>
+</form>
+
+<% if (sqlUpit) { %>
+    <p>Izvršeni upit:</p>
+    <div class="upit"><%= sqlUpit %></div>
+<% } %>
+
+<% if (sqlGreska) { %>
+    <p class="greska">Greška u bazi: <%= sqlGreska %></p>
+<% } %>
+
+<% if (sqlRezultat) { %>
+    <p>Rezultat (<%= sqlRezultat.length %> redaka):</p>
+    <% if (sqlRezultat.length > 0) { %>
+        <table>
+            <tr><th>id</th><th>username</th><th>email</th></tr>
+            <% sqlRezultat.forEach(r => { %>
+                <tr><td><%= r.id %></td><td><%= r.username %></td><td><%= r.email %></td></tr>
+            <% }) %>
+        </table>
+    <% } %>
+<% } %>
+
+<hr>
+
+<h2>Loša autentifikacija (Broken Authentication)</h2>
+
+<p class="upute"><b>Upute:</b> Kad je ranjivost <b>uključena</b>: lozinke se spremaju u plain textu (vidi tablicu dolje),
+    registracija prihvaća bilo kakvu lozinku (npr. "1"), poruka kod prijave otkriva postoji li korisnik,
+    nema ograničenja broja pokušaja (brute force uspije), a session ID ostaje isti nakon prijave (session fixation).
+    Kad je ranjivost <b>isključena</b>: lozinka se sprema kao hash (scrypt + salt), traži se jaka lozinka,
+    poruka je uvijek ista, nakon 3 kriva pokušaja račun se zaključa na 1 minutu i nakon prijave se dobije novi session ID.
+    <br>Testni korisnici: <b>admin / admin123</b>, <b>ana / lozinka</b>, <b>marko / Marko#2026!</b></p>
+
+<form method="POST" action="/toggle/auth">
+    <label>
+        <input type="checkbox" name="ukljuceno" onchange="this.form.submit()" <%= authRanjivo ? "checked" : "" %>>
+        Ranjivost uključena
+    </label>
+</form>
+
+<p>Trenutni session ID: <code><%= sessionId %></code></p>
+
+<div class="box">
+    <h3>Prijava</h3>
+    <form method="POST" action="/login">
+        Korisničko ime: <input type="text" name="username"><br><br>
+        Lozinka: <input type="password" name="lozinka"><br><br>
+        <button>Prijavi se</button>
+    </form>
+</div>
+
+<div class="box">
+    <h3>Registracija</h3>
+    <form method="POST" action="/register">
+        Korisničko ime: <input type="text" name="username"><br><br>
+        Email: <input type="email" name="email"><br><br>
+        Lozinka: <input type="password" name="lozinka"><br><br>
+        <button>Registriraj se</button>
+    </form>
+</div>
+
+<div class="box">
+    <h3>Brute force napad</h3>
+    <form method="POST" action="/bruteforce">
+        Korisnik za napad: <input type="text" name="username" value="admin"><br><br>
+        <button>Pokreni napad (10 čestih lozinki)</button>
+    </form>
+</div>
+
+<% if (authPoruka) { %>
+    <p class="poruka"><%= authPoruka %></p>
+<% } %>
+
+<% if (authLog) { %>
+    <div class="log">
+        <% authLog.forEach(red => { %>
+            <div><%= red %></div>
+        <% }) %>
+    </div>
+<% } %>
+
+<h3>Stanje tablice users u bazi</h3>
+<table>
+    <tr><th>id</th><th>username</th><th>email</th><th>password_plain</th><th>password_hash</th><th>krivi pokušaji</th><th>zaključan do</th></tr>
+    <% korisnici.forEach(k => { %>
+        <tr>
+            <td><%= k.id %></td>
+            <td><%= k.username %></td>
+            <td><%= k.email %></td>
+            <td><%= k.password_plain || "-" %></td>
+            <td><%= k.password_hash ? k.password_hash.substring(0, 40) + "..." : "-" %></td>
+            <td><%= k.failed_attempts %></td>
+            <td><%= k.locked_until ? new Date(k.locked_until).toLocaleTimeString("hr-HR", { timeZone: "Europe/Zagreb" }) : "-" %></td>
+        </tr>
+    <% }) %>
+</table>
+
+<form method="POST" action="/reset">
+    <button>Resetiraj bazu na početno stanje</button>
+</form>
+
+<hr>
+
+</body>
+</html>
