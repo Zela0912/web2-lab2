@@ -42,6 +42,7 @@ Aplikacija je na http://localhost:3000. Tablica `users` i testni korisnici se kr
 ### SQL Injection
 - Ranjivost uključena: u polje upisati `' OR '1'='1` i vratit će se svi korisnici.
 - Ranjivost isključena: isti unos ne vraća ništa (parametrizirani upit).
+- Napomena: na Renderu Cloudflare blokira unose s `--` (stranica "Blocked"). Takve varijante (npr. `' OR 1=1 --`) rade samo lokalno.
 
 ### Broken Authentication
 - Ranjivost uključena:
